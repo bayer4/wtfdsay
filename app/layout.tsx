@@ -15,6 +15,27 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "wtf did they say?",
   description: "Breaking down what they actually meant.",
+  icons: {
+    icon: "/favicon.png",
+  },
+  openGraph: {
+    title: "wtf did they say?",
+    description: "We decode nonsense.",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "wtf did they say? — we decode nonsense",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "wtf did they say?",
+    description: "We decode nonsense.",
+    images: ["/og-image.png"],
+  },
 };
 
 export default function RootLayout({
