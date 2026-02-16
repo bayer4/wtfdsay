@@ -121,7 +121,7 @@ export default function Home() {
   return (
     <main className="min-h-screen p-10 max-w-3xl mx-auto">
       <h1 className="text-3xl font-bold mb-6">
-        WTF Did They Say?
+        wtf did they say?
       </h1>
       <p className="text-sm text-gray-500 mb-6">
         Translating AI/tech/crypto Twitter into normal English
