@@ -1,0 +1,46 @@
+[
+  {
+    "text": "We tried something new this week and it actually worked",
+    "expected_score": 0
+  },
+  {
+    "text": "I think people overcomplicate things. Most stuff works if you just keep it simple",
+    "expected_score": 0
+  },
+  {
+    "text": "1. When you write something intended to be read by an important person, go through it and cut every unnecessary word. 2. The reader of anything you publish is an important person.",
+    "expected_score": 1
+  },
+  {
+    "text": "Anthropic is in the middle of a generational run right now with Claude. Amazing to watch them win the enterprise stack in real time.",
+    "expected_score": 1
+  },
+  {
+    "text": "Can we analytically determine the performance (throughput, latency) of a protocol? Here's a tutorial on DecentralizedThoughts that explains how to do it, using Bracha's RBC as an example.",
+    "expected_score": 2
+  },
+  {
+    "text": "When Composer 1 launched, @cursor_ai posted the graph below indicating that frontier models scored ~60 on Cursor Bench. This means Composer 1.5 is probably Sonnet 4.5 level with much higher throughput. If this is true, Cursor should share more benchmarks! Huge achievement.",
+    "expected_score": 3
+  },
+  {
+    "text": "We are rolling out more detection for automation & spam (and a lot more to come). If a human is not tapping on the screen, the account and all associated accounts will likely be suspended—even if you're just experimenting. While we aim to support legitimate use-cases of agents, this will take some time to do properly. For now, we recommend holding off on plugging in your bots. If it's critical, you can use the official API.",
+    "expected_score": 3
+  },
+  {
+    "text": "The future of dev tooling is AI-native workflows that collapse the build-test-ship loop into a single inference call. We're building for that world.",
+    "expected_score": 5
+  },
+  {
+    "text": "Everyone is still obsessed with building fancy UI wrappers for AI, but Anthropic is moving the goalposts back to the filesystem. Skills are basically SOPs for agents. we're going from 'prompt engineering' to 'workflow encoding.' if your company's internal knowledge isn't structured like this, you're going to have a hard time scaling any real agentic workflows. @Hartdrawss breakdown is solid but the real shock is how much this devalues traditional orchestration layers.",
+    "expected_score": 6
+  },
+  {
+    "text": "The prompt-to-tweak loop is the biggest tax on agentic productivity in 2026. Subframe's Design Canvas replaces probabilistic layout hallucinations with deterministic UI generation. Inference is great for logic, but visual precision requires a structured feedback loop. By integrating drag-and-drop with Claude Code/Codex, we're moving from guessing the CSS to defining the state. This is how you scale UI development without burning thousands of tokens on pixel-pushing.",
+    "expected_score": 8
+  },
+  {
+    "text": "Disaggregated prefill and decode is no longer an advanced experiment—it's the production standard for 2026. By integrating Mooncake with SGLang, we are finally breaking the memory wall that has crippled LLM scaling. Global KVCache reuse is the key to making long-horizon agentic reasoning economically viable. Proud to see the PyTorch ecosystem embracing the architecture we've been pushing for. The future of serving is distributed, elastic, and cache-aware.",
+    "expected_score": 9
+  }
+]
