@@ -239,8 +239,11 @@ export default function Home() {
 
               <div className="mt-5 flex items-center justify-between">
                 <span
-                  className="rounded-full px-3 py-1 text-sm font-medium"
-                  style={getBuzzwordBadgeStyle(result.buzzword_score)}
+                  className="rounded-full text-sm font-medium"
+                  style={{
+                    ...getBuzzwordBadgeStyle(result.buzzword_score),
+                    padding: "4px 12px",
+                  }}
                 >
                   Buzzword Score: {result.buzzword_score}/10
                 </span>
@@ -260,7 +263,7 @@ export default function Home() {
               </div>
 
               <p className="mt-5 text-right text-xs" style={{ color: "#6b7280" }}>
-                wtfdidtheysay.com
+                wtfdsay.com
               </p>
             </div>
 
