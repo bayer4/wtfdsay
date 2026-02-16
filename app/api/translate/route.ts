@@ -2,10 +2,6 @@ import OpenAI from "openai";
 import { NextResponse } from "next/server";
 import calibrationData from "@/calibration.json";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 const calibrationExamples = calibrationData
   .map((t) => `SCORE ${t.expected_score}: "${t.text}"`)
   .join("\n\n");
@@ -123,6 +119,13 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
+
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      throw new Error("Missing OPENAI_API_KEY");
+    }
+
+    const openai = new OpenAI({ apiKey });
 
     const response = await openai.chat.completions.create({
       model: "gpt-4.1",
