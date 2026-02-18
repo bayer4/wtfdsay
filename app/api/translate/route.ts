@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import { NextResponse } from "next/server";
 import calibrationData from "@/calibration.json";
+import { enforceTranslateRateLimits } from "@/lib/translate-rate-limit";
 
 const calibrationExamples = calibrationData
   .map((t) => `SCORE ${t.expected_score}: "${t.text}"`)
@@ -111,6 +112,11 @@ Return valid JSON only. Nothing else.`;
 
 export async function POST(req: Request) {
   try {
+    const limitResponse = await enforceTranslateRateLimits(req);
+    if (limitResponse) {
+      return limitResponse;
+    }
+
     const { text } = await req.json();
 
     if (!text) {
@@ -150,8 +156,8 @@ export async function POST(req: Request) {
 
     return NextResponse.json(JSON.parse(output));
 
-  } catch (err) {
-    console.error(err);
+  } catch {
+    console.error("translate_route_error");
     return NextResponse.json(
       { error: "Failed to translate." },
       { status: 500 }
