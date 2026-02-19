@@ -92,6 +92,11 @@ export function getClientIp(req: Request): string {
 export async function enforceTranslateRateLimits(req: Request): Promise<NextResponse | null> {
   const redis = getRedisClient();
   if (!redis) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("rate_limit_dev_bypass_missing_upstash_config");
+      return null;
+    }
+
     console.error(
       "Missing Upstash Redis credentials. Set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN."
     );
