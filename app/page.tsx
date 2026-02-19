@@ -262,7 +262,7 @@ export default function Home() {
                 </div>
               </div>
 
-              <p className="mt-5 text-right text-xs" style={{ color: "#6b7280" }}>
+              <p className="mt-5 text-right" style={{ color: "#a1a1aa", fontSize: "14px" }}>
                 wtfdsay.com
               </p>
             </div>
