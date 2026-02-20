@@ -112,8 +112,15 @@ Return valid JSON only. Nothing else.`;
 
 export async function POST(req: Request) {
   try {
+    console.info("translate_request_start", {
+      hasOpenAIKey: Boolean(process.env.OPENAI_API_KEY),
+    });
+
     const limitResponse = await enforceTranslateRateLimits(req);
     if (limitResponse) {
+      console.warn("translate_request_blocked_before_openai", {
+        status: limitResponse.status,
+      });
       return limitResponse;
     }
 
@@ -128,10 +135,12 @@ export async function POST(req: Request) {
 
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
+      console.error("translate_missing_openai_key");
       throw new Error("Missing OPENAI_API_KEY");
     }
 
     const openai = new OpenAI({ apiKey });
+    console.info("translate_openai_call_start");
 
     const response = await openai.chat.completions.create({
       model: "gpt-4.1",
@@ -151,15 +160,39 @@ export async function POST(req: Request) {
     const output = response.choices[0].message.content;
 
     if (!output) {
+      console.error("translate_openai_empty_output");
       throw new Error("No response from model");
     }
 
-    return NextResponse.json(JSON.parse(output));
+    let parsedOutput: unknown;
+    try {
+      parsedOutput = JSON.parse(output);
+    } catch {
+      console.error("translate_openai_invalid_json_output");
+      return NextResponse.json(
+        {
+          error: "invalid_model_output",
+          message: "The model returned invalid JSON. Please try again.",
+        },
+        { status: 502 }
+      );
+    }
 
-  } catch {
-    console.error("translate_route_error");
+    console.info("translate_request_success");
+    return NextResponse.json(parsedOutput);
+
+  } catch (err) {
+    const errorName = err instanceof Error ? err.name : "UnknownError";
+    const errorMessage = err instanceof Error ? err.message : "Unknown error";
+    console.error("translate_route_error", {
+      errorName,
+      errorMessage,
+    });
     return NextResponse.json(
-      { error: "Failed to translate." },
+      {
+        error: "translate_failed",
+        message: "Translation failed. Please try again.",
+      },
       { status: 500 }
     );
   }

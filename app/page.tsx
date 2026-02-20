@@ -51,9 +51,18 @@ export default function Home() {
       });
 
       const data = await res.json();
+
+      if (!res.ok) {
+        setError(
+          data?.message ?? "Something went wrong. Please try again."
+        );
+        return;
+      }
+
       setResult(data as TranslateResult);
     } catch (err) {
       console.error(err);
+      setError("Network error. Please try again.");
     } finally {
       setLoading(false);
     }

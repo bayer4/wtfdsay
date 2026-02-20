@@ -90,6 +90,11 @@ export function getClientIp(req: Request): string {
 }
 
 export async function enforceTranslateRateLimits(req: Request): Promise<NextResponse | null> {
+  const upstashConfigured = Boolean(
+    process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
+  );
+  console.info("rate_limit_check_start", { upstashConfigured });
+
   const redis = getRedisClient();
   if (!redis) {
     if (process.env.NODE_ENV !== "production") {
@@ -113,6 +118,7 @@ export async function enforceTranslateRateLimits(req: Request): Promise<NextResp
     const minuteResult = await minuteLimiter.limit(`translate:minute:${clientIp}`);
 
     if (!minuteResult.success) {
+      console.warn("rate_limit_block_minute");
       const retryAfterSeconds = Math.max(
         1,
         Math.ceil((minuteResult.reset - Date.now()) / 1000)
@@ -133,6 +139,7 @@ export async function enforceTranslateRateLimits(req: Request): Promise<NextResp
     }
 
     if (perIpDailyCount > LIMITS.perIpPerDay) {
+      console.warn("rate_limit_block_ip_daily");
       return rateLimitedResponse(
         "Daily request limit reached for this IP. Please try again tomorrow.",
         secondsUntilReset
@@ -146,12 +153,14 @@ export async function enforceTranslateRateLimits(req: Request): Promise<NextResp
     }
 
     if (globalDailyCount > LIMITS.globalPerDay) {
+      console.warn("rate_limit_block_global_daily");
       return rateLimitedResponse(
         "Service is at daily capacity. Please try again tomorrow.",
         secondsUntilReset
       );
     }
 
+    console.info("rate_limit_check_pass");
     return null;
   } catch {
     console.error("rate_limit_check_failed");
