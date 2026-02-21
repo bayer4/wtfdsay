@@ -180,7 +180,7 @@ export default function Home() {
 
           {isLowBuzzword && (
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Already pretty normal ({buzzwordScore}/10).
+              This one&apos;s already pretty normal ({buzzwordScore}/10). Try pasting something from AI, tech, or crypto Twitter for the full effect.
             </p>
           )}
 
