@@ -20,6 +20,10 @@
     "expected_score": 2
   },
   {
+    "text": "A massive ship from the Claude Code Desktop team. We've been dogfooding this for a while, and can't wait for you to try it.",
+    "expected_score": 3
+  },
+  {
     "text": "When Composer 1 launched, @cursor_ai posted the graph below indicating that frontier models scored ~60 on Cursor Bench. This means Composer 1.5 is probably Sonnet 4.5 level with much higher throughput. If this is true, Cursor should share more benchmarks! Huge achievement.",
     "expected_score": 3
   },

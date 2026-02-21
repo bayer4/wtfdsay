@@ -101,6 +101,7 @@ KEY RULES:
 - If a normal person could read the tweet and get it on the first pass, it's 0–2.
 - If you have to decode stacked phrases to understand it, it's 6+.
 - If every sentence sustains that stacking, it's 7+.
+- SHORT TWEET DENSITY: if the tweet is under ~30 words and most sentences contain jargon, bump the score by 1. Brevity concentrates the buzziness — 2 buzzwords in 25 words hits harder than 2 buzzwords in 100 words. This should NOT push a tweet above 4 on its own — stacking and abstraction are still required for 5+.
 
 CALIBRATION EXAMPLES — match your score to these anchors:
 
