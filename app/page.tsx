@@ -26,9 +26,10 @@ export default function Home() {
 
   async function handleSubmit() {
     if (!input) return;
-    const hasUnsupportedUrl = /(https?:\/\/|x\.com|twitter\.com)/i.test(input);
+    const trimmed = input.trim();
+    const looksLikeJustAUrl = /^https?:\/\/\S+$/i.test(trimmed) || /^(www\.)?(x\.com|twitter\.com)\/\S*$/i.test(trimmed);
 
-    if (hasUnsupportedUrl) {
+    if (looksLikeJustAUrl) {
       setResult(null);
       setError(
         "Please paste the contents of the tweet itself for now — URLs aren’t supported yet."
