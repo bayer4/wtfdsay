@@ -1,101 +1,61 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# wtf did they say?
 
-## Getting Started
+Translating AI/tech/crypto Twitter into plain English.
 
-First, run the development server:
+**Live:** [wtfdsay.com](https://wtfdsay.com)
+
+![Screenshot placeholder](https://via.placeholder.com/800x450?text=Replace+with+actual+screenshot)
+
+## What It Does
+
+Paste any AI, tech, or crypto tweet and get back what the person actually said — in normal words. The app scores each tweet on a 0–10 buzzword scale, highlights the jargon, rewrites the whole thing in plain English, and lets you download a shareable image card of the translation.
+
+## Why I Built It
+
+I kept seeing tweets in the AI/tech space that sounded impressive but said very little. I wanted a tool that cuts through the noise — and a project that shows I build things that ship, not just prototypes.
+
+## Tech Stack
+
+- **Next.js 16** (App Router) on **Vercel**
+- **React 19** with **TypeScript**
+- **Tailwind CSS v4**
+- **OpenAI API** (GPT-4.1) for translation and scoring
+- **Upstash Redis** for rate limiting
+- **html2canvas** for client-side share card export
+- **GitHub Actions** CI (lint, typecheck, build)
+
+## Key Features
+
+- **Buzzword scoring** — a calibrated 0–10 scale with 12 scored reference tweets baked into the prompt so the model stays consistent
+- **Phrase-level annotations** — individual jargon phrases get translated, not just the whole tweet
+- **Adaptive UI** — low-scoring tweets get minimal treatment; high-scoring tweets surface more annotations and an explanation of *why* it sounds like that
+- **Downloadable share cards** — branded PNG export rendered entirely client-side
+- **Three-tier rate limiting** — per-minute, per-IP daily, and global daily limits via Upstash Redis, with graceful degradation in development
+
+## How to Run Locally
+
+```bash
+git clone https://github.com/bayer4/wtfdsay.git
+cd wtfdsay
+npm install
+```
+
+Create a `.env.local` file at the project root:
+
+```
+OPENAI_API_KEY=your-openai-api-key
+UPSTASH_REDIS_REST_URL=your-upstash-url
+UPSTASH_REDIS_REST_TOKEN=your-upstash-token
+```
+
+Then start the dev server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000). The app works without Upstash credentials in development — rate limiting is bypassed locally so you only need the OpenAI key to get started.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Architecture Notes
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-
-## Abuse protection for `/api/translate`
-
-The translate endpoint now has lightweight server-side limits backed by Upstash Redis:
-
-- 10 requests per minute per IP
-- 200 requests per day per IP
-- 2000 requests per day globally
-
-When exceeded, the API returns:
-
-- HTTP `429`
-- JSON: `{ "error": "rate_limited", "message": "<short human message>" }`
-- `Retry-After` header (minute limit and daily limits)
-
-### Required environment variables
-
-Set these in local `.env.local` and in Vercel project settings:
-
-- `UPSTASH_REDIS_REST_URL`
-- `UPSTASH_REDIS_REST_TOKEN`
-
-OpenAI is still required:
-
-- `OPENAI_API_KEY`
-
-### Vercel configuration checklist
-
-1. In Vercel, open your project.
-2. Go to `Settings` -> `Environment Variables`.
-3. Add:
-   - `UPSTASH_REDIS_REST_URL`
-   - `UPSTASH_REDIS_REST_TOKEN`
-   - `OPENAI_API_KEY`
-4. Apply to Production (and Preview if needed).
-5. Redeploy.
-
-### Quick local verification with curl
-
-Use localhost dev server:
-
-```bash
-curl -i -X POST "http://localhost:3000/api/translate" \
-  -H "Content-Type: application/json" \
-  -d '{"text":"test tweet"}'
-```
-
-Minute limit test (expect `429` after ~10 requests in 1 minute):
-
-```bash
-for i in {1..12}; do
-  curl -s -o /dev/null -w "%{http_code}\n" \
-    -X POST "http://localhost:3000/api/translate" \
-    -H "Content-Type: application/json" \
-    -d '{"text":"load test"}'
-done
-```
-
-You can inspect headers when limited:
-
-```bash
-curl -i -X POST "http://localhost:3000/api/translate" \
-  -H "Content-Type: application/json" \
-  -d '{"text":"load test"}'
-```
+The interesting work here is in the prompt engineering and scoring calibration. Getting an LLM to assign a consistent buzzword score across wildly different tweets is harder than it sounds — the model wants to be generous. I solved this by building a `calibration.json` file with 12 hand-scored reference tweets spanning the full 0–10 range, which gets injected into the system prompt as scoring anchors. The prompt itself is heavily constrained: explicit voice rules, banned phrases, per-score-tier behavior (low-scoring tweets get left mostly alone instead of being unnecessarily rewritten), and a rubric that distinguishes stacked jargon from normal domain terms. On the infrastructure side, the rate limiting is split into three tiers — per-minute burst, per-IP daily, and global daily — each with its own Redis key strategy and TTL management, and the whole system gracefully degrades: skips limits in dev, returns 503 in production if Redis is down. It's a small app, but every layer has a reason behind it.

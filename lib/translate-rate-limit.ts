@@ -98,13 +98,14 @@ export async function enforceTranslateRateLimits(req: Request): Promise<NextResp
   const redis = getRedisClient();
   if (!redis) {
     if (process.env.NODE_ENV !== "production") {
-      console.warn("rate_limit_dev_bypass_missing_upstash_config");
+      console.warn("rate_limit_dev_bypass", { env: process.env.NODE_ENV });
       return null;
     }
 
-    console.error(
-      "Missing Upstash Redis credentials. Set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN."
-    );
+    console.error("rate_limit_missing_credentials", {
+      hasUrl: Boolean(process.env.UPSTASH_REDIS_REST_URL),
+      hasToken: Boolean(process.env.UPSTASH_REDIS_REST_TOKEN),
+    });
     return NextResponse.json(
       { error: "service_unavailable", message: "Rate limit backend is not configured." },
       { status: 503 }
@@ -118,7 +119,7 @@ export async function enforceTranslateRateLimits(req: Request): Promise<NextResp
     const minuteResult = await minuteLimiter.limit(`translate:minute:${clientIp}`);
 
     if (!minuteResult.success) {
-      console.warn("rate_limit_block_minute");
+      console.warn("rate_limit_block_minute", { clientIp, remaining: minuteResult.remaining });
       const retryAfterSeconds = Math.max(
         1,
         Math.ceil((minuteResult.reset - Date.now()) / 1000)
@@ -139,7 +140,7 @@ export async function enforceTranslateRateLimits(req: Request): Promise<NextResp
     }
 
     if (perIpDailyCount > LIMITS.perIpPerDay) {
-      console.warn("rate_limit_block_ip_daily");
+      console.warn("rate_limit_block_ip_daily", { clientIp, count: perIpDailyCount, limit: LIMITS.perIpPerDay });
       return rateLimitedResponse(
         "Daily request limit reached for this IP. Please try again tomorrow.",
         secondsUntilReset
@@ -153,17 +154,17 @@ export async function enforceTranslateRateLimits(req: Request): Promise<NextResp
     }
 
     if (globalDailyCount > LIMITS.globalPerDay) {
-      console.warn("rate_limit_block_global_daily");
+      console.warn("rate_limit_block_global_daily", { count: globalDailyCount, limit: LIMITS.globalPerDay });
       return rateLimitedResponse(
         "Service is at daily capacity. Please try again tomorrow.",
         secondsUntilReset
       );
     }
 
-    console.info("rate_limit_check_pass");
+    console.info("rate_limit_check_pass", { clientIp });
     return null;
-  } catch {
-    console.error("rate_limit_check_failed");
+  } catch (err) {
+    console.error("rate_limit_check_failed", { error: err instanceof Error ? err.message : "unknown" });
     return NextResponse.json(
       { error: "service_unavailable", message: "Rate limiting is temporarily unavailable." },
       { status: 503 }

@@ -136,12 +136,12 @@ export async function POST(req: Request) {
 
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      console.error("translate_missing_openai_key");
+      console.error("translate_missing_openai_key", { env: process.env.NODE_ENV });
       throw new Error("Missing OPENAI_API_KEY");
     }
 
     const openai = new OpenAI({ apiKey });
-    console.info("translate_openai_call_start");
+    console.info("translate_openai_call_start", { model: "gpt-4.1", inputLength: text.length });
 
     const response = await openai.chat.completions.create({
       model: "gpt-4.1",
@@ -161,7 +161,7 @@ export async function POST(req: Request) {
     const output = response.choices[0].message.content;
 
     if (!output) {
-      console.error("translate_openai_empty_output");
+      console.error("translate_openai_empty_output", { finishReason: response.choices[0].finish_reason });
       throw new Error("No response from model");
     }
 
@@ -169,7 +169,7 @@ export async function POST(req: Request) {
     try {
       parsedOutput = JSON.parse(output);
     } catch {
-      console.error("translate_openai_invalid_json_output");
+      console.error("translate_openai_invalid_json_output", { outputLength: output.length });
       return NextResponse.json(
         {
           error: "invalid_model_output",
@@ -179,7 +179,7 @@ export async function POST(req: Request) {
       );
     }
 
-    console.info("translate_request_success");
+    console.info("translate_request_success", { inputLength: text.length });
     return NextResponse.json(parsedOutput);
 
   } catch (err) {

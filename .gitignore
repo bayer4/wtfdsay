@@ -39,6 +39,15 @@ calibration-draft.md
 # vercel
 .vercel
 
+# playwright
+/test-results/
+/playwright-report/
+/blob-report/
+
+# editors
+.vscode/
+.idea/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
