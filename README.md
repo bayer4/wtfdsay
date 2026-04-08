@@ -4,7 +4,7 @@ Translating AI/tech/crypto Twitter into plain English.
 
 **Live:** [wtfdsay.com](https://wtfdsay.com)
 
-![wtf did they say? — example translation](./public/screenshot.png)
+<img src="./public/screenshot.png" alt="wtf did they say? — example translation" width="500" />
 
 ## What It Does
 
