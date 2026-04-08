@@ -4,7 +4,7 @@ Translating AI/tech/crypto Twitter into plain English.
 
 **Live:** [wtfdsay.com](https://wtfdsay.com)
 
-![Screenshot placeholder](https://via.placeholder.com/800x450?text=Replace+with+actual+screenshot)
+![wtf did they say? — example translation](./public/screenshot.png)
 
 ## What It Does
 
