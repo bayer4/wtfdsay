@@ -8,9 +8,18 @@ const LIMITS = {
   perIpPerDay: 200,
   globalPerDay: 2000,
 };
+const MAX_FALLBACK_IPS = 10_000;
+
+type FallbackCounter = {
+  count: number;
+  resetAt: number;
+};
 
 let redisClient: Redis | null = null;
 let perMinuteLimiter: Ratelimit | null = null;
+const fallbackMinuteCounters = new Map<string, FallbackCounter>();
+const fallbackDailyCounters = new Map<string, FallbackCounter>();
+let fallbackGlobalDailyCounter: FallbackCounter | null = null;
 
 function getRedisClient(): Redis | null {
   if (redisClient) {
@@ -72,6 +81,104 @@ function rateLimitedResponse(message: string, retryAfterSeconds?: number) {
   );
 }
 
+function incrementFallbackCounter(
+  counters: Map<string, FallbackCounter>,
+  key: string,
+  resetAt: number,
+  now: number
+): FallbackCounter {
+  const current = counters.get(key);
+  if (!current || current.resetAt <= now) {
+    const next = { count: 1, resetAt };
+    counters.set(key, next);
+    return next;
+  }
+
+  current.count += 1;
+  return current;
+}
+
+function getFallbackClientKey(clientIp: string, now: number): string {
+  if (
+    fallbackMinuteCounters.has(clientIp) ||
+    fallbackDailyCounters.has(clientIp)
+  ) {
+    return clientIp;
+  }
+
+  if (
+    fallbackMinuteCounters.size < MAX_FALLBACK_IPS &&
+    fallbackDailyCounters.size < MAX_FALLBACK_IPS
+  ) {
+    return clientIp;
+  }
+
+  for (const [key, counter] of fallbackMinuteCounters) {
+    if (counter.resetAt <= now) fallbackMinuteCounters.delete(key);
+  }
+  for (const [key, counter] of fallbackDailyCounters) {
+    if (counter.resetAt <= now) fallbackDailyCounters.delete(key);
+  }
+
+  if (
+    fallbackMinuteCounters.size < MAX_FALLBACK_IPS &&
+    fallbackDailyCounters.size < MAX_FALLBACK_IPS
+  ) {
+    return clientIp;
+  }
+
+  return SHARED_IP_BUCKET;
+}
+
+function enforceFallbackRateLimits(clientIp: string): NextResponse | null {
+  const now = Date.now();
+  const fallbackClientKey = getFallbackClientKey(clientIp, now);
+  const minuteResetAt = now + 60_000;
+  const secondsUntilMidnight = getSecondsUntilUtcMidnight(new Date(now));
+  const dailyResetAt = now + secondsUntilMidnight * 1000;
+
+  const minuteCounter = incrementFallbackCounter(
+    fallbackMinuteCounters,
+    fallbackClientKey,
+    minuteResetAt,
+    now
+  );
+  if (minuteCounter.count > LIMITS.perMinute) {
+    return rateLimitedResponse(
+      "Too many requests right now. Please try again in about a minute.",
+      Math.max(1, Math.ceil((minuteCounter.resetAt - now) / 1000))
+    );
+  }
+
+  const dailyCounter = incrementFallbackCounter(
+    fallbackDailyCounters,
+    fallbackClientKey,
+    dailyResetAt,
+    now
+  );
+  if (dailyCounter.count > LIMITS.perIpPerDay) {
+    return rateLimitedResponse(
+      "Daily request limit reached for this IP. Please try again tomorrow.",
+      secondsUntilMidnight
+    );
+  }
+
+  if (!fallbackGlobalDailyCounter || fallbackGlobalDailyCounter.resetAt <= now) {
+    fallbackGlobalDailyCounter = { count: 1, resetAt: dailyResetAt };
+  } else {
+    fallbackGlobalDailyCounter.count += 1;
+  }
+
+  if (fallbackGlobalDailyCounter.count > LIMITS.globalPerDay) {
+    return rateLimitedResponse(
+      "Service is at daily capacity. Please try again tomorrow.",
+      secondsUntilMidnight
+    );
+  }
+
+  return null;
+}
+
 export function getClientIp(req: Request): string {
   const forwardedFor = req.headers.get("x-forwarded-for");
   if (forwardedFor) {
@@ -97,19 +204,11 @@ export async function enforceTranslateRateLimits(req: Request): Promise<NextResp
 
   const redis = getRedisClient();
   if (!redis) {
-    if (process.env.NODE_ENV !== "production") {
-      console.warn("rate_limit_dev_bypass", { env: process.env.NODE_ENV });
-      return null;
-    }
-
-    console.error("rate_limit_missing_credentials", {
+    console.warn("rate_limit_fallback_missing_credentials", {
       hasUrl: Boolean(process.env.UPSTASH_REDIS_REST_URL),
       hasToken: Boolean(process.env.UPSTASH_REDIS_REST_TOKEN),
     });
-    return NextResponse.json(
-      { error: "service_unavailable", message: "Rate limit backend is not configured." },
-      { status: 503 }
-    );
+    return enforceFallbackRateLimits(getClientIp(req));
   }
 
   const clientIp = getClientIp(req);
@@ -164,10 +263,9 @@ export async function enforceTranslateRateLimits(req: Request): Promise<NextResp
     console.info("rate_limit_check_pass", { clientIp });
     return null;
   } catch (err) {
-    console.error("rate_limit_check_failed", { error: err instanceof Error ? err.message : "unknown" });
-    return NextResponse.json(
-      { error: "service_unavailable", message: "Rate limiting is temporarily unavailable." },
-      { status: 503 }
-    );
+    console.error("rate_limit_fallback_after_redis_error", {
+      error: err instanceof Error ? err.message : "unknown",
+    });
+    return enforceFallbackRateLimits(clientIp);
   }
 }

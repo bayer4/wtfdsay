@@ -30,7 +30,7 @@ I kept seeing tweets in the AI/tech space that sounded impressive but said very 
 - **Phrase-level annotations** — individual jargon phrases get translated, not just the whole tweet
 - **Adaptive UI** — low-scoring tweets get minimal treatment; high-scoring tweets surface more annotations and an explanation of *why* it sounds like that
 - **Downloadable share cards** — branded PNG export rendered entirely client-side
-- **Three-tier rate limiting** — per-minute, per-IP daily, and global daily limits via Upstash Redis, with graceful degradation in development
+- **Three-tier rate limiting** — per-minute, per-IP daily, and global daily limits via Upstash Redis, with an in-memory fallback if Redis is unavailable
 
 ## How to Run Locally
 
@@ -58,4 +58,4 @@ Open [http://localhost:3000](http://localhost:3000). The app works without Upsta
 
 ## Architecture Notes
 
-The interesting work here is in the prompt engineering and scoring calibration. Getting an LLM to assign a consistent buzzword score across wildly different tweets is harder than it sounds — the model wants to be generous. I solved this by building a `calibration.json` file with 12 hand-scored reference tweets spanning the full 0–10 range, which gets injected into the system prompt as scoring anchors. The prompt itself is heavily constrained: explicit voice rules, banned phrases, per-score-tier behavior (low-scoring tweets get left mostly alone instead of being unnecessarily rewritten), and a rubric that distinguishes stacked jargon from normal domain terms. On the infrastructure side, the rate limiting is split into three tiers — per-minute burst, per-IP daily, and global daily — each with its own Redis key strategy and TTL management, and the whole system gracefully degrades: skips limits in dev, returns 503 in production if Redis is down. It's a small app, but every layer has a reason behind it.
+The interesting work here is in the prompt engineering and scoring calibration. Getting an LLM to assign a consistent buzzword score across wildly different tweets is harder than it sounds — the model wants to be generous. I solved this by building a `calibration.json` file with 12 hand-scored reference tweets spanning the full 0–10 range, which gets injected into the system prompt as scoring anchors. The prompt itself is heavily constrained: explicit voice rules, banned phrases, per-score-tier behavior (low-scoring tweets get left mostly alone instead of being unnecessarily rewritten), and a rubric that distinguishes stacked jargon from normal domain terms. On the infrastructure side, the rate limiting is split into three tiers — per-minute burst, per-IP daily, and global daily — each with its own Redis key strategy and TTL management. If Redis is unavailable, a bounded in-memory limiter keeps translations working until Redis recovers. It's a small app, but every layer has a reason behind it.
